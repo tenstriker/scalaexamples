@@ -11,6 +11,7 @@ import me.lemire.integercompression._
 import me.lemire.integercompression.differential._
 import scala.util.Random
 
+
 object Measure extends Enumeration(1) {
 
   type Measure = Value
@@ -20,6 +21,327 @@ object Measure extends Enumeration(1) {
   //protected final def Value(name: String, x : String): MyVal = new MyVal(name,x)
 
 
+}
+
+/**
+ * https://stackoverflow.com/questions/39682752/scala-factory-for-generic-types-using-the-apply-method
+ */
+object GenericFactoryTest {
+  
+  trait Foo[A, B]
+  class Thing
+  
+  trait Factory[A, B] {
+    def make(thing: Thing): Foo[A, B]
+  }
+  
+  object Foo {
+    
+    def apply[A, B](thing: Thing)(implicit ev: Factory[A, B]) = ev.make(thing)
+
+    implicit val fooImplFactory: Factory[Int, String] = new Factory[Int, String] {
+      override def make(thing: Thing): Foo[Int, String] = new FooImpl[Int, String](thing)
+    }
+    
+    implicit val anotherFooImplFactory: Factory[String, String] = new Factory[String, String] {
+      override def make(thing: Thing): Foo[String, String] = new AnotherFooImpl[String, String](thing)
+    }
+  }
+  case class FooImpl[A, B](thing: Thing) extends Foo[A, B]
+  case class AnotherFooImpl[A, B](thing: Thing) extends Foo[A, B]
+  
+  def main(args: Array[String]): Unit = {
+    
+    import Foo._
+  
+    val fooImpl = Foo[Int, String](new Thing)
+    val anotherFooImpl = Foo[String, String](new Thing)
+  
+    println(fooImpl)
+    println(anotherFooImpl)
+  }
+  
+}
+
+/**
+ * https://stackoverflow.com/questions/30926958/scala-factory-method-with-generics
+ */
+object GenericFactoryTest2 {
+    
+  // enable higher kinded types to prevent warnings
+  import scala.language.higherKinds
+  
+  // our case classes
+  case class A[A1,A2](j:A1, k:A2)
+  case class B[B1,B2](j:B1, k:B2)
+  
+  // Define our factory interface
+  trait Factory[T[_,_]] {
+    def make[P1,P2](p1: P1, p2: P2): T[P1,P2]
+  }
+  
+  // Companion class makes factory easier to use
+  object Factory {
+    def apply[T[_, _]](implicit ev: Factory[T]) = ev
+  }
+  
+  // Add implicit implementations of Factory[A]
+  implicit object AFactory extends Factory[A] {
+    def make[P1,P2](p1: P1, p2: P2): A[P1,P2] = A(p1, p2)
+  }
+  
+  // Add implicit implementations of Factory[B]
+  implicit object BFactory extends Factory[B] {
+    def make[P1,P2](p1: P1, p2: P2): B[P1,P2] = B(p1, p2)
+  }  
+  
+  def main(args: Array[String]) {
+    val a = Factory[A].make("one", 2)
+    val b = Factory[B].make(1, "two")
+  }
+}
+object GenericTest {
+  
+  trait MessageMarkerTrait
+  trait ResponseMarkerTrait 
+  
+  //T ans S can be anything; there may not be any comonalities between them at all
+  trait DataTransformer[T <: MessageMarkerTrait, S <: ResponseMarkerTrait] {
+    def transformData(topic: String, message: T) : S
+  }
+  
+  class WorkflowFlowhandler[T <: MessageMarkerTrait,S <: ResponseMarkerTrait] {
+    
+    //Common logic that handle bathces for any type of message: T  
+    def handleBatch[T <: MessageMarkerTrait, S <: ResponseMarkerTrait](messages:  List[T], dataTransformers: List[DataTransformer[T, S]]) = {
+        
+      val conditionA = true
+      val conditionB = true
+      //psuedo code
+      messages.foreach { message =>
+        
+        dataTransformers.foreach{ transformer =>
+          import PartitionHandler._
+          //For each message new instance of PartitionerHandler should be created based on some premises
+          if(conditionA && conditionB) {
+            
+            val ph = PartitionHandler[MessageAny, ResponseAny] 
+            ph.process(message, transformer) 
+          } else {
+            val ph = PartitionHandler[MessageA, ResponseA] 
+            ph.process(message, transformer)
+          }
+        }
+      }
+    }
+  }
+  
+  trait PartitionHandler[T <: MessageMarkerTrait, S <: ResponseMarkerTrait] {
+    def process[T <: MessageMarkerTrait, S <: ResponseMarkerTrait](message: T, transformer: DataTransformer[T, S]) : S
+  }
+  
+  trait PartitionHandlerFactory[T <: MessageMarkerTrait, S <: ResponseMarkerTrait] {
+    def make(): PartitionHandler[T, S]     
+  }
+  
+  object PartitionHandler {
+    
+    
+    def apply[T, S](premise: String ) = premise match {
+      case "All" => new AllPartitionHandler()
+      case "A" => new TopicAPartitionHandler()
+    }
+    
+    def apply[T <: MessageMarkerTrait, S <: ResponseMarkerTrait](implicit ev: PartitionHandlerFactory[T, S]) = ev.make()
+
+    implicit val fooImplFactory: PartitionHandlerFactory[MessageAny, ResponseAny] = new PartitionHandlerFactory[MessageAny, ResponseAny] {
+      override def make(): PartitionHandler[MessageAny, ResponseAny] = new AllPartitionHandler()
+    }
+    
+    implicit val anotherFooImplFactory: PartitionHandlerFactory[MessageA, ResponseA] = new PartitionHandlerFactory[MessageA, ResponseA] {
+      override def make(): PartitionHandler[MessageA, ResponseA] = new TopicAPartitionHandler()
+    }    
+  }  
+  
+  class MessageA extends MessageMarkerTrait
+  class ResponseA extends ResponseMarkerTrait
+  
+  class MessageAny extends MessageMarkerTrait
+  class ResponseAny extends ResponseMarkerTrait
+  
+  class TopicAPartitionHandler[T, S] extends PartitionHandler[MessageA, ResponseA] {
+    
+    override def process[T <: MessageMarkerTrait, S <: ResponseMarkerTrait](message: T, transformer: DataTransformer[T, S]) = {
+      transformer.transformData("topicA", message)
+    }
+        
+  }
+  
+  class AllPartitionHandler extends PartitionHandler[MessageAny, ResponseAny] {
+    
+    override def process[T <: MessageMarkerTrait, S <: ResponseMarkerTrait](message: T, transformer: DataTransformer[T, S]) = {
+      transformer.transformData("all", message)
+    }
+  }
+  
+  
+  object Execute {
+    
+    def init[T <: MessageMarkerTrait, S <: ResponseMarkerTrait](messages:  List[T], dataTransformers: List[DataTransformer[T, S]]) {
+      
+      val wfhandler = new WorkflowFlowhandler[T, S]
+      wfhandler.handleBatch(messages, dataTransformers)
+      
+    }
+  }
+
+  
+  trait CanPlus[A, B] {
+       def plus(a1: A, a2: A): B
+     }
+  
+  abstract class MyList[+A] {
+    
+    def head: A
+    def tail: MyList[A]
+    def isEmpty: Boolean
+    def add[B >: A](element: B): MyList[B] // or it can return MyList[A] 
+    def printElements: String
+    override def toString: String = "[" + printElements + "]"
+  }
+  
+  def main(args: Array[String]) {
+    val messageA = new MessageA() 
+    val responseA =  new ResponseA()
+    val dt = new DataTransformer[MessageA, ResponseA]() {
+      def transformData(topic: String, message: MessageA) : ResponseA = {
+        responseA
+      }
+    }
+    Execute.init(List(messageA), List(dt))
+    println("Execution finished")
+  }
+}
+
+
+object GenericTest3 {
+  
+  
+  //T ans S can be anything; there may not be any comonalities between them at all
+  trait DataTransformer[T, S] {
+    def transformData(topic: String, message: T) : S
+  }
+  
+  class WorkflowFlowhandler[T, S] {
+    
+    //Common logic that handle bathces for any type of message: T  
+    def handleBatch[T, S](messages:  List[T], topicOperations: Seq[TopicOperations[T, S]]) = {
+        
+      val conditionA = true
+      val conditionB = true
+      //psuedo code
+      messages.foreach { message =>
+        
+        topicOperations.foreach{ topicOperation =>
+          
+          topicOperation.etlFunction.partitionerHandler.process(message, topicOperation.etlFunction.dataTransformer)
+          
+        }
+      }
+    }
+  }
+  
+  case class TopicOperations[T, S](topic: String,
+                              etlFunction: ETLfunction[T, S])
+
+  case class ETLfunction[T, S](dataTransformer: DataTransformer[T, S], 
+    partitionerHandler: PartitionHandler[T, S])
+    
+  trait PartitionHandler[T, S] {
+    def process(message: T, transformer: DataTransformer[T, S]) : S
+  }
+  
+  trait PartitionHandlerFactory[T, S] {
+    def make(premise: String): PartitionHandler[T, S]     
+  }
+  
+  object PartitionHandler {
+    
+    
+    /*def apply[T, S](premise: String ) = premise match {
+      case "All" => new AllPartitionHandler()
+      case "A" => new TopicAPartitionHandler()
+    }*/
+    
+    def apply[T, S](premise: String )(implicit ev: PartitionHandlerFactory[T, S]) = ev.make(premise)
+
+    implicit val fooImplFactory: PartitionHandlerFactory[MessageA, ResponseA] = new PartitionHandlerFactory[MessageA, ResponseA] {
+      override def make(premise: String): PartitionHandler[MessageA, ResponseA] = premise match {
+        case "All" => new AllPartitionHandler()
+        case "A" => new TopicAPartitionHandler()
+      }
+    }
+    
+  }  
+  
+  class MessageA
+  class ResponseA
+  
+  class TopicAPartitionHandler extends PartitionHandler[MessageA, ResponseA] {
+    
+    override def process(message: MessageA, transformer: DataTransformer[MessageA, ResponseA]) = {
+      transformer.transformData("topicA", message)
+    }
+        
+  }
+  
+  class AllPartitionHandler[T, S] extends PartitionHandler[T, S] {
+    
+    override def process(message: T, transformer: DataTransformer[T, S]) = {
+      transformer.transformData("all", message)
+    }
+  }
+  
+  
+  object Execute {
+    
+    def init[T, S](messages:  List[T], topicOperations: Seq[TopicOperations[T, S]]) {
+      
+      val wfhandler = new WorkflowFlowhandler[T, S]
+      wfhandler.handleBatch(messages, topicOperations)
+      
+    }
+  }
+  
+  def main(args: Array[String]) {
+    val messageA = new MessageA() 
+    val responseA =  new ResponseA()
+    
+    import PartitionHandler._
+    //For each message new instance of PartitionerHandler should be created based on some premises
+      
+    val dt1 = new DataTransformer[MessageA, ResponseA]() {
+      def transformData(topic: String, message: MessageA) : ResponseA = {
+        responseA
+      }
+    }
+    val dt2 = new DataTransformer[MessageA, ResponseA]() {
+      def transformData(topic: String, message: MessageA) : ResponseA = {
+        responseA
+      }
+    }
+    val ph1 = PartitionHandler[MessageA, ResponseA]("All")
+    val etlfun1 = ETLfunction(dt1, ph1)
+       
+    val ph2 = PartitionHandler[MessageA, ResponseA] ("A")
+    val etlfun2 = ETLfunction(dt2, ph2)
+    
+    val tp1 = TopicOperations("messageA1", etlfun1)
+    val tp2 = TopicOperations("messageA2", etlfun2)
+    
+    Execute.init(List(messageA), List(tp1, tp2))
+    println("Execution finished")
+  }
 }
 
 package myPackage {
@@ -246,7 +568,7 @@ object ScalaTest2 {
 
     val db = Array(0.9999999999906084, 9.087182546043768E-12, 3.044033058260346E-13,  0.002466529744795271)
     println(db)
-    println(db.map(num =>  scala.math.BigDecimal(num).setScale(3, scala.math.BigDecimal.RoundingMode.FLOOR).toDouble).mkString(","))
+    //println(db.map(num =>  scala.math.BigDecimal(num).setScale(3, scala.math.BigDecimal.RoundingMode.FLOOR).toDouble).mkString(","))
 
     val clzz = "AnnualContractValue"
     val recall = 0.8723
@@ -418,6 +740,14 @@ object ScalaTest2 {
     // we can repack the data: (optional)
     compressed2 = Arrays.copyOf(compressed2,outputoffset.intValue());
 
+    def printIntIfTrue(a: Int)(b: Int => Boolean) = {
+      if (b(a)) println(a)
+    }
+    printIntIfTrue(5){ a => 
+      //more complecated logice
+      a > 4
+    }
+    
     /**
     *
     * now uncompressing

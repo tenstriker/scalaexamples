@@ -4,9 +4,38 @@ import scala.util.Sorting
 import scala.util.Try
 import org.apache.commons.lang3.time.StopWatch
 
+
+
+class MyClass[+T <: Number] {
+  
+}
+
+
+
+
 object ScalaTest extends App {
 
   println("Inside scala Test")
+  
+  def something() = {
+    println("calling something")
+    1
+  }
+  
+  def callSomething(x: Int) = {
+    println("x1=" + x)
+    println("x2=" + x)
+  }
+  
+  def callSomething2(x: => Int) = {
+    println("x1=" + x)
+    println("x2=" + x)
+  }  
+  
+  callSomething2(something())
+  
+  def add2(a: Int) = (b: Int) => a + b
+  println(add2(20)(19))
   
   val dataPath = "/mds/.snapshot/nir0304/hive/warehouse/incentint.db"
   val parts = dataPath.split("/")
