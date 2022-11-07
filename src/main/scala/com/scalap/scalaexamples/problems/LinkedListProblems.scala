@@ -246,7 +246,9 @@ object LinkedListProblems {
         }
       }
       
-      
+      /**
+       * https://leetcode.com/problems/merge-two-sorted-lists/
+       */
       def mergeTwoSortedLists(l1: ListNode, l2: ListNode): ListNode = {
         
         var newListHead: ListNode = new ListNode()
@@ -275,7 +277,55 @@ object LinkedListProblems {
         newListHead.next
       }
       
-      def mergeTwoSortedListsInPlace(l1: ListNode, l2: ListNode): ListNode = {
+      def mergeTwoSortedListsInPlace1(l1: ListNode, l2: ListNode): ListNode = {
+        
+        if(l1 == null) return l2
+        if(l2 == null) return l1
+        
+        var c1 = l1
+        var c2 = l2
+        
+        val dummy = new ListNode()
+        var point = dummy
+        
+        while(c1 != null && c2 != null) {
+          
+          if(c1.x <= c2.x) {
+            point.next = c1
+            c1 = c1.next
+          } else {
+            point.next = c2
+            c2 = c1
+            c1 = point.next.next
+          }
+          point = point.next  
+        }
+        if(c1 != null) {
+          point.next = c1
+        } else {
+          point.next = c2
+        }
+        
+        dummy.next
+      }
+      
+      //Recursive approach
+      def mergeTwoLists(l1: ListNode, l2: ListNode): ListNode = {
+        
+        if(l1 == null) return l2
+        if(l2 == null) return l1
+        
+        if(l1.x <= l2.x) {
+          l1.next = mergeTwoLists(l1.next, l2)
+          return l1
+        } else {
+          l2.next = mergeTwoLists(l1, l2.next)
+          return l2
+        }
+        
+      }
+      
+      def mergeTwoSortedListsInPlace2(l1: ListNode, l2: ListNode): ListNode = {
         
         var c1 = l1
         var c2 = l2
@@ -548,7 +598,112 @@ Thus x1 = x3
     
   object Hard {
     
+    /**
+     * https://leetcode.com/problems/merge-k-sorted-lists/solution/
+     */
+    object MergeKLists {
+      
+      /**
+       * T: O(N logK)
+       * S: O(1)
+       */
+      def mergeKListsDivideAndConquer(lists: Array[ListNode]): ListNode = {
+        
+        if(lists.isEmpty) return null
+        
+        def partitionAndMerge(start: Int, end: Int): ListNode = {
+          if(start == end) return lists(start)
+          if(start < end) {
+            val mid = start + (end - start)/2
+            val l1 = partitionAndMerge(start, mid)
+            val l2 = partitionAndMerge(mid + 1, end)
+            return mergeTwoLists(l1, l2)
+          } else {
+            return null
+          }
+        }       
+        
+        def mergeTwoLists(l1: ListNode, l2: ListNode): ListNode = {
+        
+          if(l1 == null) return l2
+          if(l2 == null) return l1
+          
+          if(l1.x <= l2.x) {
+            l1.next = mergeTwoLists(l1.next, l2)
+            return l1
+          } else {
+            l2.next = mergeTwoLists(l1, l2.next)
+            return l2
+          }
+          
+        }       
+       
+        partitionAndMerge(0, lists.length - 1)
+      }
+    }
     
+    /**
+     * https://leetcode.com/problems/merge-k-sorted-lists/solution/
+     * Look into comments
+     */
+    def mergeKListsDivideAndConquer2(lists: Array[ListNode]): ListNode = {
+      
+      if(lists.isEmpty) return null
+      
+      var interval = 1
+      val len = lists.length
+      
+      while(interval < len) {
+        
+        for(i <- 0 until len - interval by 2) {
+          lists(i) = Medium.mergeTwoSortedListsInPlace1(lists(i), lists(i + interval))
+        }
+        interval *= 2
+      }
+      lists(0)
+    }
+    
+    /**
+     *  T: O(Nlogk)
+     *  S : O(k) 
+     */
+    def mergeKLists(lists: Array[ListNode]): ListNode = {
+      
+      if(lists.isEmpty) return null
+      
+      //Scala by defautls have max heap priority queue; so changing order here in Ordering
+      implicit val a = new Ordering[ListNode] {
+        override def compare(a:ListNode, b:ListNode) = {
+          if (a.x < b.x) 
+              1
+          else if (a.x == b.x) 
+              0
+          else
+              -1
+        }
+      }
+      
+      //implicit val listOrdering: Ordering[ListNode] = Ordering.by(_.x)
+      
+      val que = collection.mutable.PriorityQueue[ListNode]()
+      
+      val dummy = new ListNode()
+      var point = dummy
+      
+      for(node <- lists) {
+        if(node != null) que.enqueue(node)
+      }
+      
+      while(que.nonEmpty) { 
+
+        point.next = que.dequeue()
+        point = point.next
+        val newNode = point.next
+        if(newNode != null) que.enqueue(newNode)
+      }
+      
+      dummy.next
+    }
     
     
   }

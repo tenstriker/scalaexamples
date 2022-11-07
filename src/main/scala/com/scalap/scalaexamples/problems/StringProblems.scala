@@ -595,6 +595,117 @@ object StringProblems {
        }
        
     }
+    
+    /**
+     * https://leetcode.com/problems/maximum-number-of-occurrences-of-a-substring/
+     */
+    object MaxOccuranceOfSubString {
+      
+      //https://leetcode.com/problems/maximum-number-of-occurrences-of-a-substring/discuss/888643/Java-easy-to-understand-solution-O(n)
+      
+      def maxFreq(s: String, maxLetters: Int, minSize: Int, maxSize: Int): Int = {
+        
+        if(s.isEmpty()) return 0 
+        var max = 0
+        val map = collection.mutable.Map[String, Int]()
+        
+        for(i <- 0 until s.length() - minSize + 1) {
+          val curSubStr = s.substring(i, i + minSize)
+          if(isValid(curSubStr)) {
+            map.put(curSubStr, map.getOrElse(curSubStr, 0) + 1)
+            max = Math.max(max, map(curSubStr))
+          }
+        }
+        
+        def isValid(str: String) : Boolean = {
+          str.toCharArray().distinct.size <= maxLetters
+        }
+        max
+      }
+      
+    }
+    
+    /**
+     * https://leetcode.com/problems/string-compression/
+     */
+    object StringCompression {
+      
+      def compress(chars: Array[Char]): Int = {
+        
+        var len = 0
+        var i = 0
+        while(i < chars.length) {
+          val currentChar = chars(i)
+          var count = 0
+          while(i < chars.length && chars(i) == currentChar) {
+            count += 1
+            i += 1
+          }
+          chars(len) = currentChar
+          len += 1
+          if(count != 1) {
+            for(c <- Integer.toString(count).toCharArray()) {
+              chars(len) = c
+              len += 1
+            }
+          }
+        }
+        len
+      }
+    }
+    
+    
+    object PrettyPringJson extends App {
+      
+      
+      def prettyPrintJson(jsonStr: String) {
+      
+        if(jsonStr.isEmpty) return    
+        
+        val sb = new StringBuilder()
+        
+        var trackIndent = 0
+        
+        jsonStr.foreach { ch =>
+          
+          if('{'.equals(ch) ||           
+               '['.equals(ch)  ) {
+            
+            trackIndent += 1     
+            println("trackIndent: "+ trackIndent)     
+            val totalIndent = for(i <- 0 until trackIndent) yield "\t"
+            sb.append(ch).append("\n").append(totalIndent.mkString("")) 
+                 
+                 
+          } else if('}'.equals(ch) ||
+                   ']'.equals(ch)) {
+          
+            trackIndent -= 1
+            val totalIndent = for(i <- 0 until trackIndent) yield "\t"
+            sb.append("\n").append(totalIndent.mkString("")).append(ch)   
+              
+                 
+          } else if(','.equals(ch)) {
+              
+            val totalIndent = for(i <- 0 until trackIndent) yield "\t"
+            sb.append(ch).append("\n").append(totalIndent.mkString("")) 
+                 
+          } else {
+            sb.append(ch)       
+          }
+          
+        }
+        println(sb)
+      }
+                 
+      val jsonStr = "{a:123,g:c}"           
+      //prettyPrintJson(jsonStr)
+                 
+      val jsonStr1 = "{a:x,g:[b,d,e]}"
+      prettyPrintJson(jsonStr1)
+    }
+    
+
 
     
   }

@@ -4,6 +4,12 @@ import scala.collection.Seq
 
 object GraphProblems {
   
+  class Node(var value: Int) {
+    
+    var neighbors: List[Node] = _
+    
+  }
+  
   object Medium {
   
     /**
@@ -119,86 +125,7 @@ object GraphProblems {
       }      
     }
     
-    /**
-     * https://leetcode.com/problems/number-of-closed-islands/
-     */
-    object ClosedIslands {
-      
-      /**
-       * First pass - Fill the border 0 with 1's as they are not eligible
-       * Second pass - find remaining 0, count it, fill them with 1's to avoid recounting 
-       * Time: O(n)
-       * Memory: O(n) for stack
-       */
-      def closedIsland(grid: Array[Array[Int]]): Int = {
-        
-        var count = 0
-        if(grid.isEmpty) return count
-        
-        var m = grid.length
-        var n = grid(0).length
-        
-        def expandAndFill(i: Int, j: Int) {
-          if(i < 0 || j < 0 || i >= m || j >= n || grid(i)(j) == 1) return
-          grid(i)(j) = 1
-          expandAndFill(i, j + 1)
-          expandAndFill(i + 1, j)
-          expandAndFill(i, j - 1)
-          expandAndFill(i - 1, j)
-        }
-        
-        //First pass - Fill the border 0 with 1's as they are not eligible
-        for(i <- 0 until m) {
-          for(j <- 0 until n) {
-            if(i == 0 || j == 0 || i == m - 1 || j == n - 1)  expandAndFill(i, j)
-          }
-        }
-        
-        //Second pass - find remaining 0, count it, fill them with 1's to avoid recounting
-        for(i <- 0 until m) {
-          for(j <- 0 until n) {
-            if(grid(i)(j) == 0) {
-              count += 1
-              expandAndFill(i, j)
-            }
-          }
-        }
-        count
-        
-      }
-      
-      /**
-       * One pass only: return true if expansion doesn't start from boarder and contains 1 in all surroundings
-       */
-      def closedIsland2(grid: Array[Array[Int]]): Int = {
-        
-        var count = 0
-        if(grid.isEmpty) return count
-        
-        var m = grid.length
-        var n = grid(0).length
-        
-        def expandAndFill(i: Int, j: Int) : Boolean = {
-          if(i < 0 || j < 0 || i >= m || j >= n) return false
-          if(grid(i)(j) == 1) return true
-          grid(i)(j) = 1
-          //NOTE: bitwise & operator
-          expandAndFill(i, j + 1) & expandAndFill(i + 1, j) & expandAndFill(i, j - 1) & expandAndFill(i - 1, j) 
-        }
-        
-        for(i <- 0 until m) {
-          for(j <- 0 until n) {
-            if(grid(i)(j) == 0) {              
-              if(expandAndFill(i, j)) count += 1
-            }
-          }
-        }
-        count
-        
-      }
-      
-    }
-    
+
     /**
      * https://leetcode.com/problems/possible-bipartition/
      */
@@ -208,7 +135,7 @@ object GraphProblems {
           
         import scala.collection.mutable._
         val graph = ArrayBuffer[ArrayBuffer[Int]]()
-        val colors = collection.mutable.Map[Int, Int]()
+        val groups = collection.mutable.Map[Int, Int]()
         
         for(i <- 1 to N + 1) graph += ArrayBuffer()
         
@@ -218,16 +145,16 @@ object GraphProblems {
         }
         
         for(node <- 1 to N) {
-          if(!colors.contains(node) && !dfs(node, 0)) return false
+          if(!groups.contains(node) && !dfs(node, 0)) return false
         }
         
-        def dfs(node: Int, color: Int) : Boolean = {
+        def dfs(node: Int, group: Int) : Boolean = {
           
-          if(colors.contains(node)) return color == colors(node)
-          colors.put(node, color)
+          if(groups.contains(node)) return group == groups(node)
+          groups.put(node, group)
           
           for(neighbor <- graph(node)) {
-            if(!dfs(neighbor, color ^ 1)) return false
+            if(!dfs(neighbor, group ^ 1)) return false
           }
           true
         }
@@ -235,6 +162,135 @@ object GraphProblems {
         true
       }
       
+    }
+    
+    /**
+     * https://leetcode.com/problems/accounts-merge/solution/
+     * https://leetcode.com/problems/accounts-merge/discuss/109158/Java-Solution-(Build-graph-%2B-DFS-search)
+     */
+    object AccountMerge {
+      
+      def accountsMerge(accounts: List[List[String]]): List[List[String]] = {
+      
+        import collection.mutable._
+        val res = collection.mutable.ArrayBuffer[List[String]]()
+        val emailToName = collection.mutable.Map[String, String]()
+        val edgeList = collection.mutable.Map[String, ArrayBuffer[String]]()
+        
+        for(acc <- accounts) {
+          val name = acc(0)
+          for(email <- acc.tail) {
+            emailToName.put(email, name)
+            edgeList.put(email, edgeList.getOrElse(email, ArrayBuffer()) += acc(1))
+            edgeList.put(acc(1), edgeList.getOrElse(acc(1), ArrayBuffer()) += email)                
+          }
+        }
+        
+        val seen = collection.mutable.Set[String]()
+        
+        for(email <- edgeList.keySet) {
+          if(!seen.contains(email)) {
+            seen.add(email)
+            val stack = collection.mutable.Stack[String]()
+            stack.push(email)
+            val merged = collection.mutable.ArrayBuffer[String]()
+            while(stack.nonEmpty) {
+              val node = stack.pop()
+              merged += node
+              for(ne <- edgeList(node)){
+                if(!seen.contains(ne)) {
+                  seen.add(ne)
+                  stack.push(ne)
+                }
+              }
+            }
+            val sortedMerged = emailToName(email) +: merged.sorted
+            res += sortedMerged.toList
+          }
+        }
+        
+        res.toList
+      }
+      /**
+       * https://leetcode.com/problems/accounts-merge/solution/
+       */
+      def accountsMergeUnionFind(accounts: List[List[String]]): List[List[String]] = {
+        val res = collection.mutable.ArrayBuffer[List[String]]()
+        res.toList
+      }
+    }
+    
+    /**
+     * https://leetcode.com/problems/clone-graph/
+     */
+    object CloneGraph {
+      
+      def cloneGraph(graph: Node): Node = {
+        
+        var visited = collection.mutable.Map[Node, Node]()
+        
+        def dfs(node: Node) : Node  = {
+          
+          if(node == null) return null
+          
+          if(visited.contains(node)) return visited(node)
+          
+          val newNode = new Node(node.value)
+          visited.put(node, newNode)
+          
+          val newNeighbors = collection.mutable.ArrayBuffer[Node]()
+          
+          for(neighbor <- node.neighbors) {
+            newNeighbors += cloneGraph(neighbor)  
+          }
+          
+          newNode.neighbors = newNeighbors.toList
+          
+          newNode
+        }
+        
+        dfs(graph)
+      }
+    }
+    
+    /**
+     * https://leetcode.com/problems/keys-and-rooms/solution/
+     */
+    object KeysAndRooms {
+      
+      def canVisitAllRooms(rooms: List[List[Int]]): Boolean = {
+        
+        val visited = collection.mutable.Set[Int]()
+        
+        //DFS recrusive
+        def visitRoom(room: Int) {
+          
+          visited += room
+          for(key <- rooms(room)) {
+            if(!visited.contains(key)) visitRoom(key)
+          }
+          
+        }
+        visitRoom(0)
+        visited.size == rooms.size
+      }  
+      
+      def canVisitAllRooms2(rooms: List[List[Int]]): Boolean = {
+        
+        val visited = collection.mutable.Set[Int]()
+        val stk = collection.mutable.Stack[Int]()
+        stk.push(0)
+        
+        //DFS Iterative
+        while(stk.nonEmpty) {
+          val roomKey = stk.pop
+          visited += roomKey
+          for(key <- rooms(roomKey)) {
+            if(!visited.contains(key)) stk.push(key)
+          }
+        }
+        visited.size == rooms.size
+      }    
     }
     
   }

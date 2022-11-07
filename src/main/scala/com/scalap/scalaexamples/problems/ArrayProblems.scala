@@ -614,6 +614,7 @@ object ArrayProblems {
           if(l == h && target == nums(l) ) l else -1     
         }
         
+        //nums = [4,5,6,7,0,1,2], target = 0
         def search1(nums: Array[Int], target: Int): Int = {
           
           var l = 0
@@ -642,6 +643,7 @@ object ArrayProblems {
           -1
         }
         
+        //nums = [4,5,6,7,0,1,2], target = 0
         def search2(nums: Array[Int], target: Int): Int = {
           
           var l = 0
@@ -664,7 +666,7 @@ object ArrayProblems {
           // The usual binary search and accounting for rotation.
           
           while(l <= h) {
-            val m = l  + (h -l)/2
+            val m = l  + (h - l)/2
             val realM = (m + rot) % nums.length
             if(nums(realM) == target) return realM
             if(target > nums(realM)) l = m + 1 else h = m - 1
@@ -1257,11 +1259,328 @@ object ArrayProblems {
         }
                   
         res
-      }      
+      }   
+      /**
+       * https://leetcode.com/problems/minimum-increment-to-make-array-unique/solution/
+       * https://leetcode.com/problems/minimum-increment-to-make-array-unique/discuss/198215/Java-O(n-%2B-m)-solution-without-sort
+       */
+      def minIncrementForUnique2(A: Array[Int]): Int = {
+        var res = 0
+        res
+      }
     }
     
+    /**
+     * https://leetcode.com/problems/merge-intervals/solution/
+     * O(n log n) //sorting
+     * O(1)
+     */
+    object MergeIntervals {
+      
+      def merge(intervals: Array[Array[Int]]): Array[Array[Int]] = {
+        
+        if(intervals.isEmpty) return intervals
+        
+        
+        val sorted = intervals.sortBy(arr => arr(0))
+        
+        val merged = collection.mutable.ArrayBuffer[Array[Int]]()
+        
+        merged += sorted(0)
+        
+        for(interval <- sorted.tail) {
+        
+          val lastmax = merged(merged.size - 1)(1)
+          if(lastmax < interval(0)) { // Disjoint intervals, add the new interval to the list
+            merged += interval
+          } else { // Overlapping intervals, move the end if needed
+            merged(merged.size - 1)(1) = Math.max(lastmax, interval(1))            
+          }
+          
+        }
+        
+        merged.toArray
+          
+      }  
+      
+    }
+    
+    /**
+     * Like MergeIntervals but merge across two different Sets2
+     */
+    object MergeIntervals2 {
+      
+      
+      /**
+       * Naive implementation that premerge two sets and then merges intervals
+       */
+      def unionRanges(set1: Array[Array[Int]], set2: Array[Array[Int]]) : Array[Array[Int]] = {
+           
+        if(set1.isEmpty) return set2
+        if(set2.isEmpty) return set1
+       
+        //we can merge two sets since we are taking union after sorting
+        val mergedSet = set1 ++: set2
+        val sortedSet = mergedSet.sortBy(arr => arr(0))    
+       
+        val res = collection.mutable.ArrayBuffer[Array[Int]]()
+       
+        res += sortedSet(0)
+       
+        for(interval <- sortedSet.tail) {
+                       
+            val last = res(res.size - 1)
+           
+            //check if last range is non overlapping
+            if(last(1) < interval(0)) {                
+                res += interval
+            } else { //last range is overlapping and can be expanded to include current one
+                res(res.size - 1)(1) = Math.max(last(1), interval(1))
+            }            
+           
+        }
+       
+        res.toArray
+       
+      }
+      
+      /**
+       * Merging two sets without premerge
+       */
+      def unionRanges2(set1: Array[Array[Int]], set2: Array[Array[Int]]) : Array[Array[Int]] = {
+       
+        if(set1.isEmpty) return set2
+        if(set2.isEmpty) return set1
+               
+        val sortedSet1 = set1.sortBy(arr => arr(0))    
+        val sortedSet2 = set2.sortBy(arr => arr(0))    
+       
+        val res = collection.mutable.ArrayBuffer[Array[Int]]()
+       
+        res += sortedSet1(0)
+        var curlst = 2 //tracks which list we need to lookup and compare against last element of `res`
+        var ptr1 = 1 //cur pointer for list 1
+        var ptr2 = 0 //cur pointer for list 2
+       
+        while(ptr1 < sortedSet1.size || ptr2 < sortedSet2.size ) {
+                       
+            val last = res(res.size - 1)
+           
+            val interval = if(curlst == 2) {                
+                val it = sortedSet2(ptr2)            
+                ptr2 += 1    
+                it
+            } else {
+                val it = sortedSet1(ptr1)
+                ptr1 += 1
+                it
+            }
+           
+            //overlapping
+            if(last(1) >= interval(0)) {      
+                val start = Math.min(last(0), interval(0))        
+                val end = Math.max(last(1), interval(1))
+                res(res.size - 1) = Array(start, end)
+            } else { //last range is overlapping and can be expanded to include current one
+                res += interval
+            }           
+            
+            curlst = if(ptr2 <= sortedSet2.length - 1 && ptr1 <= sortedSet1.length - 1) {
+                if(sortedSet1(ptr1)(0) < sortedSet2(ptr2)(0)) { //compare start of next intervals in both lists; small should be explore next as it has more chances of merging                                                                      //with existing one
+                    1
+                } else {
+                    2
+                }
+            } else if(ptr2 >= sortedSet2.length) {
+                1
+            } else if(ptr1 >= sortedSet1.length) {
+                2
+            } else curlst
+        }
+       
+        res.toArray
+      }
+      
+    }
+    
+    /**
+     * https://leetcode.com/problems/non-overlapping-intervals/
+     * Classic Greedy problem: Interval Scheduling
+     */
+    object EraseOverlapIntervals {
+      
+      /**
+       * Invariant: if two intervals are overlapping, we want to remove the interval that has 
+       * the longer end point -- the longer interval will always overlap with more or the same number of 
+       * future intervals compared to the shorter one
+       */
+      def eraseOverlapIntervals(intervals: Array[Array[Int]]): Int = {
+        
+        if(intervals.isEmpty) return 0
+        val sorted = intervals.sortBy(arr => arr(1)) //sorting based on arr(0) works too
+        var count, prev = 0
+        
+        for(i <- 1 until sorted.length) {
+          if(sorted(prev)(1) > sorted(i)(0)) {
+            if(sorted(prev)(1) > sorted(i)(1)) {
+              prev = i
+            }
+            count += 1
+          } else {
+            prev = i
+          }          
+        }
+        count
+      }
+      
+      def eraseOverlapIntervals2(intervals: Array[Array[Int]]): Int = {
+        
+        if(intervals.isEmpty) return 0
+        val sorted = intervals.sortBy(arr => arr(1)) //sorting based on arr(0) works too
+        var count = 0
+        var end = sorted(0)(1)
+        
+        for(i <- 1 until sorted.length) {
+          if(sorted(i)(0) < end) {
+            count += 1
+          } else {
+            end = sorted(i)(1)
+          }          
+        }
+        count
+      }      
+      
+    }
+    
+    /**
+     * https://leetcode.com/problems/sort-colors/
+     */
+    object SortColors {
+      
+      
+      def sortColors(nums: Array[Int]): Unit = {
+        
+        val colorCount = Array.ofDim[Int](3)
+          
+        for(n <- nums) {
+          colorCount(n) += 1
+        }
+        
+        for(i <- 0 until nums.length) {          
+          if(colorCount(0) > i) nums(i) = 0
+          else if(colorCount(0) + colorCount(1) > i) nums(i) = 1
+          else nums(i) = 2
+        }
+      } 
+      
+      def sortColors2(nums: Array[Int]): Unit = {
+        
+        var color0, color1, color2 = 0
+          
+        for(n <- nums) {
+          if(n == 0) color0 += 1
+          if(n == 1) color1 += 1
+          if(n == 2) color2 += 1
+        }
+        
+        for(i <- 0 until nums.length) {          
+          if(color0 > i) nums(i) = 0
+          else if(color0 + color1 > i) nums(i) = 1
+          else nums(i) = 2
+        }
+      }   
+      
+      //Single pass
+      def sortColors3(nums: Array[Int]): Unit = {
+        
+        var n0 = 0
+        var n2 = nums.length - 1
+        
+        var i = 0
+        while(i <= n2) {
+          if(nums(i) == 0) {
+            nums(i) = nums(n0)
+            nums(n0) = 0
+            i += 1
+            n0 += 1
+          } else if (nums(i) == 2) {
+            nums(i) = nums(n2)
+            nums(n2) = 2
+            n2 -= 1
+          } else {
+            i += 1
+          }
+        }
+      }
+    }
+    
+    /**
+     * https://leetcode.com/problems/best-time-to-buy-and-sell-stock-ii/
+     */
+    object BestTimeToBuySell2 {
+      
+      def maxProfit(prices: Array[Int]): Int = {
+        
+        var maxProfit = 0
+        val n = prices.length
+        var i = 0
+        
+        while(i < n - 1) {
+        
+          while(i + 1 < n && prices(i) >= prices(i + 1)) i += 1
+          val buy = prices(i)
+          while(i + 1 < n && prices(i) <= prices(i + 1)) i += 1
+          val sell = prices(i)
+          maxProfit += sell - buy
+        }
+        maxProfit
+      }
+      
+      def maxProfit2(prices: Array[Int]): Int = {
+        
+        var maxProfit = 0
+        
+        for(i <- 1 until prices.length) {
+          if(prices(i) > prices(i - 1)) {
+            maxProfit += prices(i) - prices(i - 1)
+          }
+        }
+        maxProfit
+      }
+      
+    }
+    
+    /**
+     * https://leetcode.com/problems/contiguous-array/solution/
+     */
+    object ContiguousArray {
+      
+      def findMaxLength(nums: Array[Int]): Int = {
+        
+        val map = collection.mutable.Map[Int, Int]()
+        var max = 0
+        var count = 0
+        map.put(0, -1) //count to array index map
+        
+        for(i <- 0 until nums.length) {
+          
+          val curnum = if(nums(i) == 1) 1 else -1
+          count += curnum
+          if(map.contains(count)) {
+            max = Math.max(max, i - map(count))
+          } else {
+            map.put(count, i)
+          }
+            
+        }
+        max
+      }
+      
+    }
     
   }
+  
+  
   
   object Hard {
     
@@ -1281,6 +1600,9 @@ object ArrayProblems {
       //println(bitmask)
     }
     
+    val intervals = Array(Array(1,4),Array(0,4))//,Array(8,10))
+    val sorted = intervals.sortBy(arr => arr(0))//(Ordering[Int].reverse)
+    println(sorted.map(arr => arr.mkString(",")) mkString("\\"))
     
     
     

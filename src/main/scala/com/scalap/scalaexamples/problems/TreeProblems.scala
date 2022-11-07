@@ -39,6 +39,7 @@ object TreeProblems {
     //https://leetcode.com/problems/convert-sorted-array-to-binary-search-tree/
     object SortedArrayToBBST {
       
+      //dfs, Recursion
       def sortedArrayToBST(nums: Array[Int]): TreeNode = {
           
         //bottom-up traversal; backtracking is only required to get the root node 
@@ -67,7 +68,7 @@ object TreeProblems {
      */
     object SymmetricTree {
       
-      //top down; backtracking
+      //DFS - top down; backtracking
       def isSymmetric(root: TreeNode): Boolean = {
         if(root == null) return true
         
@@ -111,7 +112,7 @@ object TreeProblems {
      */
     object TreeMaxDepth {
       
-      //recursive DFS; Topdown; computation happens on backtracking
+      //DFS; Recursive Topdown; computation happens on backtracking
       def maxDepth(root: TreeNode): Int = {
       
         if(root == null) return 0
@@ -122,7 +123,8 @@ object TreeProblems {
         loop(root)  
       }
       
-      def maxDepthDFS(root: TreeNode): Int = {
+      //BFS - Iterative using stack
+      def maxDepthBFS1(root: TreeNode): Int = {
         
         if(root == null) return 0
         val stack = collection.mutable.Stack[TreeNode]()
@@ -147,7 +149,8 @@ object TreeProblems {
         max
       }
       
-      def maxDepthBFS(root: TreeNode): Int = {
+      //BFS - Iterative using queue
+      def maxDepthBFS2(root: TreeNode): Int = {
         
         if(root == null) return 0
         val que = collection.mutable.Queue[TreeNode]()
@@ -179,7 +182,7 @@ object TreeProblems {
         if(root == null) return 0
         var sum = 0
         
-        //bottom up
+        //DFS recursive - bottom up
         def loop(node: TreeNode): Unit = {
           if(node == null) return
           if(node.value >= L && node.value <= R) sum += node.value 
@@ -208,13 +211,14 @@ object TreeProblems {
        */
       object MinDiffInBST {
       
-        //backtracking
+        //DFS recursive backtracking
         def minDiffInBST2(root: TreeNode): Int = {
           
           if(root == null) return 0
           var min = Int.MaxValue
           var prev: Int = -1
           
+          //DFS inorder
           def loop(node: TreeNode) {
             if(node == null) return 
             loop(node.left)
@@ -230,33 +234,13 @@ object TreeProblems {
             
         }    
         
-        //BFS; (not working for all leetcode input, maybe input has issue)
-        def minDiffInBST3(root: TreeNode): Int = {
-        
-          val que = collection.mutable.Queue[TreeNode]()
-          var min = Int.MaxValue
-          que.enqueue(root)
-          while(que.nonEmpty) {
-            val ele = que.dequeue()
-            if(ele.left != null) {
-              min = Math.min(min, Math.abs(ele.value - ele.left.value))
-              que.enqueue(ele.left)
-            }
-            if(ele.right != null) {
-              min = Math.min(min, Math.abs(ele.right.value - ele.value))
-              que.enqueue(ele.right)
-            }
-          }
-          min
-        }
-        
       }
       /**
        * https://leetcode.com/problems/merge-two-binary-trees/
        */
       object MergeBinaryTree {
         
-        //bottom up
+        //DFS preorder - recusrive bottom up
         def mergeTrees(t1: TreeNode, t2: TreeNode): TreeNode = {
             if(t1 == null) return t2
             if(t2 == null) return t1
@@ -272,17 +256,7 @@ object TreeProblems {
       //https://leetcode.com/problems/invert-binary-tree/solution/
       object InvertBinaryTree {
         
-        //top down; backtracking
-        def invertTree(root: TreeNode): TreeNode = {
-          if(root == null ) return null
-          val left = invertTree(root.left)
-          val right = invertTree(root.right)
-          root.left = right
-          root.right = left
-          root
-        }
-        
-        //bottom up
+        //DFS - preorder - recursive; bottom up
         def invertTree2(root: TreeNode): TreeNode = {
           if(root == null ) return null
           val tmp = root.left
@@ -293,6 +267,17 @@ object TreeProblems {
           root
         }
         
+        //DFS - postorder - top down; backtracking
+        def invertTree(root: TreeNode): TreeNode = {
+          if(root == null ) return null
+          val left = invertTree(root.left)
+          val right = invertTree(root.right)
+          root.left = right
+          root.right = left
+          root
+        }
+
+        //BFS - queue
         def invertTreeItr(root: TreeNode): TreeNode = {
           
           if(root == null) return null
@@ -311,26 +296,41 @@ object TreeProblems {
       }
       
       /**
-       * https://leetcode.com/problems/binary-tree-tilt/submissions/
+       * 	https://leetcode.com/problems/binary-tree-tilt/
        */
       object FindTilt {
         
+        def findTilt1(root: TreeNode): Int = {
+              var tiltG = 0 
+              
+              def loop(root: TreeNode): Int = {
+                if(root == null) return 0
+                val lefttilt = loop(root.left)
+                val righttilt = loop(root.right)
+                val tilt = Math.abs(lefttilt - righttilt)
+                tiltG += tilt
+                val tmp = root.value + lefttilt + righttilt
+                root.value = tilt
+                tmp
+              }
+              loop(root)
+            tiltG
+        }  
+        
         def findTilt(root: TreeNode) : Int = {
           
-          var tiltG = 0 
-          //topdown
-          def loop(root: TreeNode): Int = {
-            if(root == null) return 0
-            val lefttilt = loop(root.left)
-            val righttilt = loop(root.right)
-            val tilt = Math.abs(lefttilt - righttilt)
-            tiltG += tilt
-            val tmp = root.value + lefttilt + righttilt
+          //DFS recursive - postorder
+          def loop(root: TreeNode): (Int, Int) = {
+            if(root == null) return (0, 0)
+            val left = loop(root.left)
+            val right = loop(root.right)
+            val tilt = Math.abs(left._1 - right._1)            
+            val newSum = root.value + left._1 + right._1
             root.value = tilt
-            tmp
+            val newTilt = left._2 + right._2 + tilt
+            (newSum, newTilt)
           }
-          loop(root)
-          tiltG
+          loop(root)._2
         }
       }
       
@@ -345,7 +345,7 @@ object TreeProblems {
           if(root == null) return List[List[Int]]()
           
           val que = collection.mutable.Queue[TreeNode]()
-          val lstF = collection.mutable.ArrayBuffer[List[Int]]()
+          val lstF = collection.mutable.ListBuffer[List[Int]]()
           
           que.enqueue(root)
           while(que.nonEmpty) {
@@ -367,11 +367,14 @@ object TreeProblems {
         def levelOrderBottomDfs(root: TreeNode): List[List[Int]] = {
           
           val lstF = collection.mutable.ArrayBuffer[List[Int]]()
+          
+          //DFS - preorder
           def DFS(root: TreeNode, level: Int) {
             if(root == null) return
             if(lstF.size == level) { //time to create a list for given level
-              List[Int]() +=: lstF
+              List[Int]() +=: lstF //prepending list so it'd be in reverse order
             }
+            //lstF.size - level - 1 should always be 0 so it can add element to newly prepended list  
             lstF(lstF.size - level - 1) = lstF(lstF.size - level - 1) :+ root.value //appending element to maintain order withing sublist
             DFS(root.left, level + 1)
             DFS(root.right, level + 1)
@@ -382,6 +385,9 @@ object TreeProblems {
         
       }
       
+      /**
+       * https://leetcode.com/problems/maximum-depth-of-n-ary-tree/
+       */
       object MaxDepthNary {
         
         //BFS
@@ -448,7 +454,7 @@ object TreeProblems {
           sum
         }
         
-        //DFS iterative
+        //DFS preorder iterative
         def sumRootToLeafIter(root: TreeNode): Int = {
           
           if(root == null) return 0
@@ -521,10 +527,10 @@ object TreeProblems {
           tree.right
         }    
         
-        //Inorder; creating new tree directly
+        //Inorder; creating new tree directly using existing nodes
         def increasingBST2(root: TreeNode): TreeNode = {
           
-          val tree = new TreeNode(0)
+          val tree = new TreeNode(0) //dummy root node
           var cur = tree
           
           def inorder(node: TreeNode) {
@@ -552,7 +558,7 @@ object TreeProblems {
               node.left = null
               prev.right = node
             }
-            if(head == null) head = node // record the most left node as it will be our root
+            if(head == null) head = node // record the left most node as it will be our root
             prev = node
             dfs(node.right)
           }
@@ -575,11 +581,15 @@ object TreeProblems {
         
       }
       
+      /**
+       * https://leetcode.com/problems/minimum-depth-of-binary-tree/
+       */
       object MinDepth {
         
         def minDepth2(root: TreeNode): Int = {
           if(root == null) return 0
           var min = Int.MaxValue
+          
           def dfs(node: TreeNode, curSum: Int) {
             if(node == null) return 
             if(node.left == null && node.right == null) min = Math.min(min, curSum)
@@ -591,6 +601,7 @@ object TreeProblems {
         }   
         
         //pure back tracking; top down
+        //Postorder traversal
         def minDepth(root: TreeNode): Int = {
           if(root == null) return 0
           val left = minDepth(root.left)
@@ -619,6 +630,9 @@ object TreeProblems {
       }
       
       /**
+       * 
+       * https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/
+       * 
        * The point from where p and q won't be part of the same subtree or when one is the parent of the other.
        * BST properties:
        * Left subtree of a node N contains nodes whose values are lesser than or equal to node N's value.
@@ -645,6 +659,8 @@ object TreeProblems {
           null
         }
       }
+      
+      // >> mark
       
       /**
        * https://leetcode.com/problems/leaf-similar-trees/
@@ -1356,6 +1372,9 @@ object TreeProblems {
         }
       }
       
+      /**
+       * https://leetcode.com/problems/longest-zigzag-path-in-a-binary-tree/
+       */
       object LongestZigZag {
         
         def longestZigZag(root: TreeNode): Int = {
@@ -1408,11 +1427,89 @@ object TreeProblems {
     }
     
     object Hard {
+     
+      /**
+       * https://leetcode.com/problems/serialize-and-deserialize-binary-tree/solution/
+       */
+      class CodecDFS {
+          
+          // Encodes a list of strings to a single string.
+          def serialize(root: TreeNode): String = {
+            
+            val sb = new StringBuilder()
+              
+            def dfs(root: TreeNode) {
+              if(root == null) {
+                sb.append("n,")
+              } else {
+                sb.append(root.value).append(",")
+                dfs(root.left)
+                dfs(root.right)
+              }
+            }
+            dfs(root)
+            sb.toString()
+          }
+          
+          // Decodes a single string to a list of strings.
+          def deserialize(data: String): TreeNode = {
+            
+            val arr = data.split(",")
+            var idx = 0
+            
+            def dfs() : TreeNode = {
+              
+              if(arr(idx).equals("n") || idx == arr.length) {
+                idx += 1
+                return null 
+              }
+              val root = new TreeNode(Integer.parseInt(arr(idx)))
+              idx += 1
+              root.left = dfs()
+              root.right = dfs()
+              root
+            }
+            dfs()
+          }
+      }
+      
+      /**
+       * https://leetcode.com/problems/serialize-and-deserialize-binary-tree/discuss/74264/Short-and-straight-forward-BFS-Java-code-with-a-queue
+       */
+      class CodecBFS {
+        
+          // Encodes a list of strings to a single string.
+          def serialize(root: TreeNode): String = {
+            val sb = new StringBuilder()
+              
+            sb.toString()
+          }
+          
+          // Decodes a single string to a list of strings.
+          def deserialize(data: String): TreeNode = {
+            null
+          }
+        
+      }
       
     }
     
    
+    def main(args: Array[String]) {
       
+      val treeNode = new TreeNode(1)
+      treeNode.left = new TreeNode(2)
+      treeNode.right = new TreeNode(5)
+      treeNode.left.left =  new TreeNode(3)
+      treeNode.left.right =  new TreeNode(4)
+      
+      val codec = new Hard.CodecDFS()
+      val srltree = codec.serialize(treeNode)
+      println("srltree:" + srltree)
+      
+      val treed = codec.deserialize(srltree)
+      println("treed: "+ treed)
+    }
       
   
 }
