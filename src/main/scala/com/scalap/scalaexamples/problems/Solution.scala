@@ -2589,8 +2589,8 @@ object Solution {
           val tmp = root.left
           root.left = root.right
           root.right = tmp
-          invertTree(root.left)
-          invertTree(root.right)
+          invertTree2(root.left)
+          invertTree2(root.right)
           root
         }
         

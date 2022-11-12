@@ -206,18 +206,7 @@ object ArrayProblems {
         }
         i + 1
       }
-      
-      def removeDuplicatesumsSlowFastPointers2(nums: Array[Int]): Int = {
-        
-        if(nums.length == 0 ) return 0
-        var i = 0
-        for(j <- 1 until nums.length) {
-          if(nums(j) == nums(j-1)) i += 1 
-          else nums(j-i) = nums(j)
-        }
-        nums.length - i 
-      }
-      
+
     }
     
     //https://leetcode.com/problems/remove-element/
@@ -251,7 +240,7 @@ object ArrayProblems {
           if(nums(i) == k){
             nums(i) = nums(n-1)
             n -= 1
-            //dont increment i so it can be checked again in case n-1 element is also k 
+            //dont inc/rement i so it can be checked again in case n-1 element is also k
           } else {
             i += 1            
           }

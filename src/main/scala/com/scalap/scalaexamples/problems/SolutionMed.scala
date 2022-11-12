@@ -16,7 +16,7 @@ object SolutionMed {
     
     def dailyTemperatures1(T: Array[Int]): Array[Int] = {
       
-      //java stack is used as scala stack doesnt have peek; 
+      //java stack is used as scala stack doesn't have peek;
       //scala last returns constant last value even if 
       //its removed during while loop which is incorrect for our case
       var stk = new java.util.Stack[Int]()
@@ -131,7 +131,6 @@ object SolutionMed {
         }
       }
       count
-      
     }
     
     /**
@@ -190,6 +189,7 @@ object SolutionMed {
         }
       }
       
+
       count
     }    
     
@@ -268,7 +268,6 @@ object SolutionMed {
       while(!que.isEmpty()) {
         
         val i = que.remove()
-        
         for(j <- 1 until W) {
           if(!que.remove(i + j)) //logN operation 
             return false
@@ -371,6 +370,7 @@ object SolutionMed {
   
   /**
    * https://leetcode.com/problems/decode-string/
+   * https://leetcode.com/problems/decode-string/solutions/858759/official-solution/
    */
   object DecodeString {
     
