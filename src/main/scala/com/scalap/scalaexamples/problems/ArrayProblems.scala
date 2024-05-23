@@ -408,10 +408,19 @@ object ArrayProblems {
       //Following only work if all integer between 1 to n present in nums
       //O(n)
       def findDuplicate2(nums: Array[Int]): Int = {
-        
         val max = nums.max
         val expectedSum = (1 to max).sum
         (nums.sum - expectedSum)/(nums.length - max) 
+      }
+
+      /**
+       * Only works if there is only one instance of duplicate
+       */
+      def findDuplicate3(nums: Array[Int]): Int = {
+
+        val curSum = nums.sum
+        val expectedSum = (1 to nums.length).sum
+        nums.length - (expectedSum - curSum)
       }
       
       //By modifying the array
@@ -557,8 +566,8 @@ object ArrayProblems {
                 //append previous results at 0th position while backtracking and append that to final list as well
                 res ++= tmp.map(sorted(i) :: _)
               }
+              //skip duplicated numbers
               while (i < sorted.length-1 && sorted(i) == sorted(i+1)) {
-                  //skip duplicated numbers
                   i += 1
               }
               i += 1
@@ -575,33 +584,6 @@ object ArrayProblems {
      * Output: 4
      */
     object RotatedSortArray {
-        
-        def search(nums: Array[Int], target: Int): Int = {
-          
-          var l = 0
-          var h = nums.length - 1
-          
-          while(l < h) {
-            
-            val m = l + (h - l)/2
-            if(nums(m) == target) return m 
-            
-            if(nums(m) > nums(h)) { //real mid on left side eg. 3,4,5,6,1,2
-              if(target > nums(m) || target <= nums(h)) {
-                l = m + 1
-              } else {
-                h = m
-              }
-            } else { //real mid is right side
-              if(target > nums(m) && target <= nums(h)){
-                l = m + 1
-              } else {
-                h = m
-              }
-            }
-          }
-          if(l == h && target == nums(l) ) l else -1     
-        }
         
         //nums = [4,5,6,7,0,1,2], target = 0
         def search1(nums: Array[Int], target: Int): Int = {
@@ -631,7 +613,33 @@ object ArrayProblems {
           }
           -1
         }
-        
+
+      def search(nums: Array[Int], target: Int): Int = {
+
+        var l = 0
+        var h = nums.length - 1
+
+        while (l < h) {
+
+          val m = l + (h - l) / 2
+          if (nums(m) == target) return m
+
+          if (nums(m) > nums(h)) { //real mid on left side eg. 3,4,5,6,1,2
+            if (target > nums(m) || target <= nums(h)) {
+              l = m + 1
+            } else {
+              h = m
+            }
+          } else { //real mid is right side
+            if (target > nums(m) && target <= nums(h)) {
+              l = m + 1
+            } else {
+              h = m
+            }
+          }
+        }
+        if (l == h && target == nums(l)) l else -1
+      }
         //nums = [4,5,6,7,0,1,2], target = 0
         def search2(nums: Array[Int], target: Int): Int = {
           
@@ -764,7 +772,9 @@ object ArrayProblems {
       }
       
       
-    }      
+    }
+
+    //bookmark
     /**
      * https://leetcode.com/problems/k-closest-points-to-origin/
      */

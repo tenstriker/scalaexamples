@@ -139,7 +139,6 @@ object DesignProblems {
    */
   class LRUCache2(_capacity: Int) {
     
-    
       val map = collection.mutable.LinkedHashMap[Int, Int]()
       
       def get(key: Int): Int = {
@@ -510,7 +509,40 @@ object DesignProblems {
       count
     }
     
-  }  
+  }
+
+
+  /**
+   *
+   */
+  object LoanAggregator {
+
+    val loanQueue = collection.mutable.ArrayDeque[(Long, Int)]()
+
+    def processLoan(amount: Int) {
+      val curTime = System.currentTimeMillis()/1000
+      if(loanQueue.last._1 == curTime) {
+        loanQueue.dropRight()
+        loanQueue.last = (loanQueue.last._1, loanQueue.last._2 + amount)
+      }
+      loanQueue.enqueue((java.lang.System.currentTimeMillis()/1000, amount))
+    }
+
+    def getLoanVolume(): Int = {
+      val curTime = System.currentTimeMillis()/1000
+      var totalAmnt = 0
+
+      loanQueue.filter(ele => ele._1 <= curTime).foreach { ele =>
+        if (curTime - ele._1 < 3600) {
+          totalAmnt += ele._2
+        } else {
+          loanQueue.dequeue()
+        }
+      }
+      totalAmnt
+    }
+
+  }
   
   /**
    * https://leetcode.com/problems/design-hit-counter/discuss/83483/Super-easy-design-O(1)-hit()-O(s)-getHits()-no-fancy-data-structure-is-needed!
